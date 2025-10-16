@@ -1,0 +1,26 @@
+services:
+  phpmyadmin:
+    image: phpmyadmin:latest
+    restart: always
+    ports:
+      - "8082:80"   # accedés en http://localhost:8082
+    environment:
+      PMA_HOST: mysql
+      PMA_USER: sail
+      PMA_PASSWORD: password
+    networks:
+      - sail
+  queue:
+    image: 'sail-8.4/app'
+    container_name: tierone_queue
+    depends_on:
+      - mysql
+      - tierone.challenge
+    working_dir: /var/www/html
+    volumes:
+      - .:/var/www/html
+    entrypoint: []
+    command: ["php", "artisan", "queue:work", "--tries=3", "--sleep=1"]
+    restart: unless-stopped
+    networks:
+      - sail
