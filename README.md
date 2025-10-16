@@ -59,7 +59,7 @@ SESSION_DOMAIN=localhost
 
 Generate the app key:
 ```
-docker exec -it tierone_challenge-tierone.challenge-1 php artisan key:generate --show
+php artisan key:generate --show
 ```
 then paste it into APP_KEY=. . . on the .env file.
 
@@ -233,15 +233,15 @@ DB_PASSWORD=password
 ```
 
 Run tests:
-
-docker exec -it docker exec -it tierone_challenge-tierone.challenge-1 php artisan test
-
+```
+docker exec -it tierone_challenge-tierone.challenge-1 php artisan test tests/Feature
+```
 
 Uses RefreshDatabase, runs migrations on the testing DB, and processes jobs inline (QUEUE_CONNECTION=sync).
 
 # Troubleshooting
 
-401 or HTML home for API routes: ensure you send Authorization: Bearer <token> and Accept: application/json. Do not include cookies from visiting / in your API calls.
+401 or HTML home for API routes: ensure you send Authorization: Bearer <token> and Accept: application/json.
 
 Jobs not running: confirm QUEUE_CONNECTION=database, run migrations for queues, and ensure the queue worker service is up (docker compose up -d queue).
 
