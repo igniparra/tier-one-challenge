@@ -14,12 +14,12 @@ class ClientSeeder extends Seeder
     {
         Client::query()->firstOrCreate(
             ['email' => 'logistics@acme.com'],
-            ['name' => 'ACME Logistics']
+            ['name' => 'ACME Logistics', 'user_id' => 1]
         );
 
         Client::query()->firstOrCreate(
             ['email' => 'customer@example.com'],
-            ['name' => 'Example Corp.']
+            ['name' => 'Example Corp.', 'user_id' => 1]
         );
     }
 }

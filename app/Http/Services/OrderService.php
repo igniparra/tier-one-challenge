@@ -16,12 +16,12 @@ use Log;
  */
 class OrderService
 {
-    public function createOrder(array $data): Order
+    public function createOrder(array $data, int $client_id): Order
     {
         Log::channel('invoice')->info('Request received');
-        return DB::transaction(function () use ($data) {
+        return DB::transaction(function () use ($data, $client_id) {
             $order = Order::create([
-                'client_id' => $data['client_id'],
+                'client_id' => $client_id,
                 'status' => 'pending',
                 'total_amount' => 0,
             ]);

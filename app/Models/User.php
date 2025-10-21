@@ -45,4 +45,29 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    /**
+     * Get all clients belonging to this user.
+     *
+     * @author igniparra
+     * @access public
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function clients()
+    {
+        return $this->hasMany(Client::class, 'user_id');
+    }
+
+    /**
+     * Check if a given client_id belongs to this user.
+     *
+     * @author igniparra
+     * @access public
+     * @param  int  $client_id
+     * @return bool
+     */
+    public function hasClient(int $client_id): bool
+    {
+        return $this->clients()->where('id', $client_id)->exists();
+    }
 }

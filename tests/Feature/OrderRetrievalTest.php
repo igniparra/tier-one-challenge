@@ -12,28 +12,44 @@ use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 /**
- * Order retrieval testing (GET /api/orders/{id} y /api/clients/{client}/orders).
+ * Order retrieval testing (GET /api/orders/{id} and /api/clients/{client}/orders).
+ *
+ * @author igniparra
  */
 class OrderRetrievalTest extends TestCase
 {
     use RefreshDatabase;
 
     /** @test */
-    public function get_order_by_id_with_items_and_client(): void
+    public function gets_order_by_id_with_items_and_client(): void
     {
         $user = User::factory()->create(['password' => Hash::make('secret')]);
         Sanctum::actingAs($user);
 
-        $client = Client::factory()->create();
+        // Client must belong to this user
+        $client = Client::factory()->create(['user_id' => $user->id]);
+
         $order = Order::factory()->for($client)->create();
 
-        OrderItem::factory()->for($order)->create(['quantity' => 2, 'unit_price' => 100, 'line_total' => 200, 'name' => 'Producto A']);
-        OrderItem::factory()->for($order)->create(['quantity' => 1, 'unit_price' => 50, 'line_total' => 50, 'name' => 'Producto B']);
+        OrderItem::factory()->for($order)->create([
+            'quantity' => 2,
+            'unit_price' => 100,
+            'line_total' => 200,
+            'name' => 'Product A'
+        ]);
+
+        OrderItem::factory()->for($order)->create([
+            'quantity' => 1,
+            'unit_price' => 50,
+            'line_total' => 50,
+            'name' => 'Product B'
+        ]);
+
         $order->update(['total_amount' => 250]);
 
-        $resp = $this->getJson("/api/orders/{$order->id}");
+        $response = $this->getJson("/api/orders/{$order->id}");
 
-        $resp->assertOk()
+        $response->assertOk()
             ->assertJsonPath('order.id', $order->id)
             ->assertJsonPath('order.client_id', $client->id)
             ->assertJsonPath('order.total_amount', 250)
@@ -41,25 +57,67 @@ class OrderRetrievalTest extends TestCase
     }
 
     /** @test */
-    public function list_client_orders_with_pagination(): void
+    public function prevents_access_to_orders_from_other_users_clients(): void
+    {
+        $user = User::factory()->create();
+        $otherUser = User::factory()->create();
+
+        Sanctum::actingAs($user);
+
+        // Client belongs to another user
+        $foreignClient = Client::factory()->create(['user_id' => $otherUser->id]);
+        $order = Order::factory()->for($foreignClient)->create();
+
+        $response = $this->getJson("/api/orders/{$order->id}");
+
+        $response->assertStatus(403)
+            ->assertJson([
+                'error' => 'Unauthorized: You do not have access to this client.'
+            ]);
+    }
+
+    /** @test */
+    public function lists_client_orders_with_pagination(): void
     {
         $user = User::factory()->create(['password' => Hash::make('secret')]);
         Sanctum::actingAs($user);
 
-        $client = Client::factory()->create();
+        // Client must belong to this user
+        $client = Client::factory()->create(['user_id' => $user->id]);
+
         Order::factory()->for($client)->count(3)->create();
 
-        $resp = $this->getJson("/api/clients/{$client->id}/orders?per_page=2");
+        $response = $this->getJson("/api/clients/{$client->id}/orders?per_page=2");
 
-        $resp->assertOk()
+        $response->assertOk()
             ->assertJsonStructure([
                 'data',
                 'current_page',
                 'last_page',
-                'links', 
+                'links',
                 'per_page',
                 'total',
             ])
             ->assertJsonCount(2, 'data');
+    }
+
+    /** @test */
+    public function prevents_listing_orders_for_unowned_client(): void
+    {
+        $user = User::factory()->create();
+        $otherUser = User::factory()->create();
+
+        Sanctum::actingAs($user);
+
+        // Client belongs to another user
+        $foreignClient = Client::factory()->create(['user_id' => $otherUser->id]);
+        Order::factory()->for($foreignClient)->count(2)->create();
+
+        $response = $this->getJson("/api/clients/{$foreignClient->id}/orders");
+
+        $response->assertStatus(403)
+            ->assertJson([
+                'error' => 'Unauthorized: You do not have access to this client.'
+            ]);
     }
 }

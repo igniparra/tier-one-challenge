@@ -11,7 +11,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 
     Route::prefix('orders')->as('orders.')->group(function () {
-        Route::post('/', [OrderController::class, 'store'])->name('store');
+        Route::post('/{client_id}', [OrderController::class, 'store'])->name('store');
         Route::get('/{id}', [OrderController::class, 'show'])->name('show');
     });
     Route::prefix('clients')->as('clients.')->group(function () {
